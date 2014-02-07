@@ -1,0 +1,30 @@
+library(parallel)
+
+getTables <- function(year){
+	con <- pipe(paste("cut -f15 -d, ",year,".csv | tail -n+2 | sort | uniq -c",sep=""))
+	delaytable <- read.table(con)
+	return(delaytable)
+	}
+
+n <- NULL
+ptm <- proc.time()
+cl <- makeCluster(8)
+del <- clusterApplyLB(cl,1987:2007,getTables)
+bigtable <- NULL
+for(i in 1:21) bigtable <- rbind(bigtable,del[[i]])
+finalfreq <- aggregate(V1 ~ V2, data=bigtable, FUN = sum) ## combine the frequency tables
+freq <- finalfreq$V1
+val <- finalfreq$V2
+n <- sum(freq) ## size of data
+avg <- sum(val * freq)/n ## mean calculation
+std <- sqrt((1/(n-1))*sum((val - avg)^2 * freq)) ## Standard deviation calculation
+## Median Calculation ##
+temp <- 0
+for(j in 1:nrow(finalfreq)){
+	temp <- temp + freq[j]/n
+	if(abs(temp - 0.5)<1e-6) {med <- val[j]; break}
+	if(temp > 0.5) {med <- (val[j] + val[j-1])/2; break}
+	}
+time <- proc.time() - ptm
+results_parallel_R <- list(time = time, results = c(mean = avg,sd=std, med=med), system = Sys.info(),  session = sessionInfo())
+save(results_parallel_R,file="result_parallel_R.RData")
