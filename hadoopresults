@@ -1,0 +1,18 @@
+delay = read.table("FreqTable",colClasses="integer",header=T)
+names(delay) = c("delayinfo","freq")
+delay = delay[order(delay$delayinfo),]
+x = delay$delayinfo
+f = delay$freq
+n = sum(f)
+avg = sum(x*f)/n
+sd = sqrt(sum((x - avg)^2 * f)/n)
+temp = 0
+for(j in 1:nrow(delay)){
+        temp <- temp + f[j]/n
+        if(abs(temp - 0.5)<1e-6) {med <- x[j]; break}
+        if(temp > 0.5) {med <- (x[j] + x[j-1])/2; break}
+        }
+time = c("real: 7m 1.156s", "user: 0m3.100s", "sys: 0m0.233s")
+results_hadoop = list(time = time, results = c(mean = avg, sd=sd, med=med), system = Sys.info(),  session = sessionInfo())
+save(results_hadoop,file="result_hadoop.RData")
+
